@@ -1,6 +1,6 @@
 import requests
 import asyncio
-import logging
+from datetime import datetime
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
 
@@ -32,17 +32,18 @@ async def cache():
         if resp_json is None:
             continue
         status = resp_json['data']['info']['live']['liveStatus']
+        current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         if uid not in live_cache:
-            live_cache[uid] = 'true'
-        if live_cache[uid] == 'true':
-            if status == 0:
-                live_cache[uid] = 'false'
-        else:
-            if status == 1:
-                live_cache[uid] = 'true'
-                title = f"您关注的{resp_json['data']['info']['name']}开播了!"
-                message = f"直播标题:{resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}"
-                print(f"通知: {title}\n{message}")
+            live_cache[uid] = {'status': 'false', 'last_update': current_time}
+        if live_cache[uid]['status'] == 'true' and status == 0:
+            live_cache[uid] = {'status': 'false', 'last_update': current_time}
+            message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
+            print(message)
+        elif live_cache[uid]['status'] == 'false' and status == 1:
+            live_cache[uid] = {'status': 'true', 'last_update': current_time}
+            title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
+            message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
+            print(f"通知: {title}\n{message}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
@@ -87,7 +88,9 @@ class BiliBiliWatcherPlugin(BasePlugin):
         await cache()  # 先进行一次检查
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
-            status_message += f"B站用户 {uid}: {'直播中' if live_cache.get(uid, 'false') == 'true' else '未直播'}\n"
+            status = '直播中' if live_cache.get(uid, {}).get('status', 'false') == 'true' else '未直播'
+            last_update = live_cache.get(uid, {}).get('last_update', '无记录')
+            status_message += f"B站用户 {uid}: {status}（最后更新: {last_update}）\n"
         ctx.add_return("reply", [status_message])
         ctx.prevent_default()
 
