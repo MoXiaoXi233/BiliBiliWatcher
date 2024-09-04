@@ -195,7 +195,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.add_notify_user(ctx, user_id)
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知用户ID。格式：删除通知用户 12345")]))
                 ctx.prevent_default()
                 return
@@ -203,7 +203,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.remove_notify_user(ctx, user_id)
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知群组ID。格式：添加通知群组 12345")]))
                 ctx.prevent_default()
                 return
@@ -211,7 +211,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.add_notify_group(ctx, group_id)
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知群组ID。格式：删除通知群组 12345")]))
                 ctx.prevent_default()
                 return
@@ -239,7 +239,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.add_bili_uid(ctx, uid)
         elif msg.startswith("删除UID"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的B站用户UID。格式：删除UID 23333")]))
                 ctx.prevent_default()
                 return
@@ -247,7 +247,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.remove_bili_uid(ctx, uid)
         elif msg.startswith("添加通知用户"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知用户ID。格式：添加通知用户 12345")]))
                 ctx.prevent_default()
                 return
@@ -255,7 +255,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.add_notify_user(ctx, user_id)
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知用户ID。格式：删除通知用户 12345")]))
                 ctx.prevent_default()
                 return
@@ -263,7 +263,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.remove_notify_user(ctx, user_id)
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知群组ID。格式：添加通知群组 12345")]))
                 ctx.prevent_default()
                 return
@@ -271,7 +271,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.add_notify_group(ctx, group_id)
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
-            if len(parts) < 2):
+            if len(parts) < 2:
                 ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知群组ID。格式：删除通知群组 12345")]))
                 ctx.prevent_default()
                 return
