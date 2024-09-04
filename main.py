@@ -49,27 +49,15 @@ class BiliBiliWatcherPlugin(BasePlugin):
 
     @handler(PersonNormalMessageReceived)
     async def person_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message
-        if msg.startswith("!add_bili_uid "):
-            new_uid = msg.split(" ", 1)[1]
-            if new_uid not in config['bili_live_idx']:
-                config['bili_live_idx'].append(new_uid)
-                ctx.add_return("reply", [f"B站用户 {new_uid} 已添加。"])
-            else:
-                ctx.add_return("reply", [f"B站用户 {new_uid} 已存在。"])
-            ctx.prevent_default()
-        elif msg == "!check_live":
-            await self.check_live_status()
-            ctx.add_return("reply", ["已手动检查直播状态。"])
-            ctx.prevent_default()
-        elif msg == "!live_status":
-            status_message = self.get_live_status_message()
-            ctx.add_return("reply", [status_message])
-            ctx.prevent_default()
+        msg = ctx.event.text_message.strip()
+        await self.handle_message(ctx, msg)
 
     @handler(GroupNormalMessageReceived)
     async def group_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message
+        msg = ctx.event.text_message.strip()
+        await self.handle_message(ctx, msg)
+
+    async def handle_message(self, ctx: EventContext, msg: str):
         if msg.startswith("!add_bili_uid "):
             new_uid = msg.split(" ", 1)[1]
             if new_uid not in config['bili_live_idx']:
