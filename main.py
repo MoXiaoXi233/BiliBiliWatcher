@@ -3,7 +3,7 @@ import asyncio
 import random
 import logging
 import traceback
-from pkg.plugin.models import Plugin, register, on, EventContext, PersonMessageReceived, GroupMessageReceived
+from pkg.plugin.models import Plugin, register, on, PersonMessageReceived, GroupMessageReceived
 from pkg.plugin.host import PluginHost
 from pkg.command.models import Command, CommandGroup, CommandSession, on_command
 from pkg.models.message import Image
@@ -57,13 +57,13 @@ class BiliBiliWatcherPlugin(Plugin):
 
     @on(PersonMessageReceived)
     @on(GroupMessageReceived)
-    async def _(self, event: EventContext, host: PluginHost, message_chain, **kwargs):
+    async def handle_message(self, event, host: PluginHost, message_chain, **kwargs):
         try:
             text = str(message_chain).strip()
-            if text == "!add_bili_uid":
+            if text.startswith("!add_bili_uid"):
                 event.prevent_default()
                 event.prevent_postorder()
-                await self.add_bili_uid(event, host, kwargs)
+                await self.add_bili_uid(event, host, text.split()[1])
             elif text == "!check_live":
                 event.prevent_default()
                 event.prevent_postorder()
@@ -75,34 +75,32 @@ class BiliBiliWatcherPlugin(Plugin):
         except Exception as e:
             logging.error(traceback.format_exc())
 
-    async def add_bili_uid(self, event: EventContext, host: PluginHost, kwargs):
-        uid = kwargs['message_chain'][1].strip()
+    async def add_bili_uid(self, event, host: PluginHost, uid):
         if not uid.isdigit():
-            await self.send_message(host, kwargs, "UID 必须是数字。")
+            await self.send_message(host, event, "UID 必须是数字。")
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
-            await self.send_message(host, kwargs, f"B站用户 {uid} 已添加。")
+            await self.send_message(host, event, f"B站用户 {uid} 已添加。")
         else:
-            await self.send_message(host, kwargs, f"B站用户 {uid} 已存在。")
+            await self.send_message(host, event, f"B站用户 {uid} 已存在。")
 
-    async def check_live(self, event: EventContext, host: PluginHost, kwargs):
+    async def check_live(self, event, host: PluginHost, kwargs):
         await cache()
-        await self.send_message(host, kwargs, "已手动检查直播状态。")
+        await self.send_message(host, event, "已手动检查直播状态。")
 
-    async def live_status(self, event: EventContext, host: PluginHost, kwargs):
+    async def live_status(self, event, host: PluginHost, kwargs):
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
             status_message += f"B站用户 {uid}: {'直播中' if live_cache.get(uid, 'false') == 'true' else '未直播'}\n"
-        await self.send_message(host, kwargs, status_message)
+        await self.send_message(host, event, status_message)
 
-    async def send_message(self, host: PluginHost, kwargs, message):
-        if kwargs["launcher_type"] == "group":
-            await host.send_group_message(kwargs["launcher_id"], message)
+    async def send_message(self, host: PluginHost, event, message):
+        if event.context_type == "group":
+            await host.send_group_message(event.context_id, message)
         else:
-            await host.send_person_message(kwargs["launcher_id"], message)
+            await host.send_person_message(event.context_id, message)
 
     # 插件卸载时触发
     def __del__(self):
         pass
-
