@@ -50,10 +50,29 @@ async def cache():
 async def notify_users_and_groups(message):
     for user_id in config['notify_users']:
         print(f"通知用户 {user_id}: {message}")
-        # 在这里添加实际通知用户的代码
+        await send_message(user_id, message)  # 实际通知用户的代码
+
     for group_id in config['notify_groups']:
         print(f"通知群组 {group_id}: {message}")
-        # 在这里添加实际通知群组的代码
+        await send_message(group_id, message)  # 实际通知群组的代码
+
+async def send_message(recipient_id, message):
+    # 这里实现发送消息的逻辑
+    # 例如，你可以通过某个 API 发送消息
+    # 这里是一个伪代码示例：
+    api_url = f"https://your-chat-api/send_message"
+    payload = {
+        'recipient_id': recipient_id,
+        'message': message
+    }
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    response = requests.post(api_url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print(f"消息发送成功: {recipient_id}")
+    else:
+        print(f"消息发送失败: {recipient_id}, 错误: {response.text}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
