@@ -27,6 +27,9 @@
 
 下方是给用户看的内容，按需修改
 -->
+# BiliBiliWatcher
+
+BiliBiliWatcher 是一个用于监控 B 站直播状态的插件。
 
 ## 安装
 
@@ -38,5 +41,8 @@
 或查看详细的[插件安装说明](https://github.com/RockChinQ/QChatGPT/wiki/5-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
 
 ## 使用
-
-<!-- 插件开发者自行填写插件使用说明 -->
+```
+!add_bili_uid <UID>：添加 B站用户的 UID。
+!check_live：手动触发检查直播状态。
+!live_status：查询当前直播状态缓存。
+```
