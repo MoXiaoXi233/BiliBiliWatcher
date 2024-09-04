@@ -1,6 +1,7 @@
 # BiliBiliWatcher
 
 BiliBiliWatcher 是一个用于监控 B 站直播状态的插件。
+但是功能没写完，没时间搞，先放着
 
 ## 安装
 
