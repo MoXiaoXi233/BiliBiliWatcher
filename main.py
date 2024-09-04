@@ -35,7 +35,7 @@ async def get_bili_status(uid):
         logger.error(f"请求错误: {e}")
         return None
 
-async def cache():
+async def cache(ctx):
     for uid in config['bili_live_idx']:
         resp_json = await get_bili_status(uid)
         if resp_json is None:
@@ -47,27 +47,27 @@ async def cache():
         if live_cache[uid]['status'] == 'true' and status == 0:
             live_cache[uid] = {'status': 'false', 'last_update': current_time}
             message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
-            await notify_users_and_groups(message)
+            await notify_users_and_groups(ctx, message)
             logger.info(message)
         elif live_cache[uid]['status'] == 'false' and status == 1:
             live_cache[uid] = {'status': 'true', 'last_update': current_time}
             title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
             message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
-            await notify_users_and_groups(f"通知: {title}\n{message}")
+            await notify_users_and_groups(ctx, f"通知: {title}\n{message}")
             logger.info(f"通知: {title}\n{message}")
         else:
             logger.info(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")
 
-async def notify_users_and_groups(message):
+async def notify_users_and_groups(ctx, message):
     for user_id in config['notify_users']:
         logger.info(f"通知用户 {user_id}: {message}")
-        await send_message("person", user_id, message)
+        await send_message(ctx, "person", user_id, message)
 
     for group_id in config['notify_groups']:
         logger.info(f"通知群组 {group_id}: {message}")
-        await send_message("group", group_id, message)
+        await send_message(ctx, "group", group_id, message)
 
-async def send_message(target_type, target_id, message):
+async def send_message(ctx, target_type, target_id, message):
     # 这里实现发送消息的逻辑
     message_chain = [mirai.Plain(message)]
     if target_type == "person":
@@ -87,7 +87,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
 
     async def periodic_check(self):
         while True:
-            await cache()
+            await cache(None)  # 定期检查时不需要上下文
             await asyncio.sleep(60)  # 每分钟检查一次
 
     async def add_bili_uid(self, ctx: EventContext, uid):
@@ -147,7 +147,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         ctx.prevent_default()
 
     async def live_status(self, ctx: EventContext):
-        await cache()  # 先进行一次检查
+        await cache(ctx)  # 先进行一次检查
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
             status = '直播中' if live_cache.get(uid, {}).get('status', 'true') == 'true' else '未直播'
