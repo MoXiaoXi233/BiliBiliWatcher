@@ -1,27 +1,54 @@
-import asyncio
-from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
-from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
+from pkg.plugin.context import register, handler, llm_func, BasePlugin, APIHost, EventContext
+from pkg.plugin.events import *  # 导入事件类
 
-@register(name="TestPlugin", description="Minimal Test Plugin", version="0.1", author="YourName")
-class TestPlugin(BasePlugin):
 
+"""
+在收到私聊或群聊消息"hello"时，回复"hello, <发送者id>!"或"hello, everyone!"
+"""
+
+
+# 注册插件
+@register(name="Hello", description="hello world", version="0.1", author="RockChinQ")
+class HelloPlugin(BasePlugin):
+
+    # 插件加载时触发
     def __init__(self, host: APIHost):
-        self.host = host
+        pass
 
-    async def send_message(self, host: APIHost, event, message):
-        if event.context_type == "group":
-            await host.send_group_message(event.context_id, message)
-        else:
-            await host.send_person_message(event.context_id, message)
+    # 异步初始化
+    async def initialize(self):
+        pass
 
+    # 当收到个人消息时触发
     @handler(PersonNormalMessageReceived)
-    async def handle_person_message(self, event: PersonNormalMessageReceived, ctx: EventContext):
-        msg = event.text_message.strip()
-        if msg == "!test_command":
-            await self.send_message(self.host, event, "Test command received!")
+    async def person_normal_message_received(self, ctx: EventContext):
+        msg = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
+        if msg == "hello":  # 如果消息为hello
 
+            # 输出调试信息
+            self.ap.logger.debug("hello, {}".format(ctx.event.sender_id))
+
+            # 回复消息 "hello, <发送者id>!"
+            ctx.add_return("reply", ["hello, {}!".format(ctx.event.sender_id)])
+
+            # 阻止该事件默认行为（向接口获取回复）
+            ctx.prevent_default()
+
+    # 当收到群消息时触发
     @handler(GroupNormalMessageReceived)
-    async def handle_group_message(self, event: GroupNormalMessageReceived, ctx: EventContext):
-        msg = event.text_message.strip()
-        if msg == "!test_command":
-            await self.send_message(self.host, event, "Test command received!")
+    async def group_normal_message_received(self, ctx: EventContext):
+        msg = ctx.event.text_message  # 这里的 event 即为 GroupNormalMessageReceived 的对象
+        if msg == "hello":  # 如果消息为hello
+
+            # 输出调试信息
+            self.ap.logger.debug("hello, {}".format(ctx.event.sender_id))
+
+            # 回复消息 "hello, everyone!"
+            ctx.add_return("reply", ["hello, everyone!"])
+
+            # 阻止该事件默认行为（向接口获取回复）
+            ctx.prevent_default()
+
+    # 插件卸载时触发
+    def __del__(self):
+        pass
