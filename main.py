@@ -1,16 +1,12 @@
 import requests
 import asyncio
-import json
 from datetime import datetime
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
 import logging
 
-# 配置文件路径
-CONFIG_PATH = 'config.json'
-
 # 默认配置
-default_config = {
+config = {
     'bili_live_idx': ['479308514'],
     'notify_users': [],
     'notify_groups': []
@@ -22,19 +18,6 @@ live_cache = {}
 # 设置日志
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-def load_config():
-    try:
-        with open(CONFIG_PATH, 'r') as f:
-            return json.load(f)
-    except FileNotFoundError:
-        return default_config
-
-def save_config(config):
-    with open(CONFIG_PATH, 'w') as f:
-        json.dump(config, f, indent=4)
-
-config = load_config()
 
 def get_bili_status(uid):
     headers = {
@@ -112,7 +95,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
-            save_config(config)
             ctx.reply(f"B站用户 {uid} 已添加。")
         else:
             ctx.reply(f"B站用户 {uid} 已存在。")
@@ -125,7 +107,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
             return
         if uid in config['bili_live_idx']:
             config['bili_live_idx'].remove(uid)
-            save_config(config)
             ctx.reply(f"B站用户 {uid} 已删除。")
         else:
             ctx.reply(f"B站用户 {uid} 不存在。")
@@ -134,7 +115,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def add_notify_user(self, ctx: EventContext, user_id):
         if user_id not in config['notify_users']:
             config['notify_users'].append(user_id)
-            save_config(config)
             ctx.reply(f"通知用户 {user_id} 已添加。")
         else:
             ctx.reply(f"通知用户 {user_id} 已存在。")
@@ -143,7 +123,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def remove_notify_user(self, ctx: EventContext, user_id):
         if user_id in config['notify_users']:
             config['notify_users'].remove(user_id)
-            save_config(config)
             ctx.reply(f"通知用户 {user_id} 已删除。")
         else:
             ctx.reply(f"通知用户 {user_id} 不存在。")
@@ -152,7 +131,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def add_notify_group(self, ctx: EventContext, group_id):
         if group_id not in config['notify_groups']:
             config['notify_groups'].append(group_id)
-            save_config(config)
             ctx.reply(f"通知群组 {group_id} 已添加。")
         else:
             ctx.reply(f"通知群组 {group_id} 已存在。")
@@ -161,7 +139,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def remove_notify_group(self, ctx: EventContext, group_id):
         if group_id in config['notify_groups']:
             config['notify_groups'].remove(group_id)
-            save_config(config)
             ctx.reply(f"通知群组 {group_id} 已删除。")
         else:
             ctx.reply(f"通知群组 {group_id} 不存在。")
