@@ -55,19 +55,19 @@ class BiliBiliWatcherPlugin(Plugin):
             new_uid = msg.split(" ", 1)[1]
             if new_uid not in config['bili_live_idx']:
                 config['bili_live_idx'].append(new_uid)
-                host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已添加。"])
+                await host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已添加。"])
             else:
-                host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已存在。"])
+                await host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已存在。"])
             event.prevent_default()
             event.prevent_postorder()
         elif msg == "!check_live":
             await self.check_live_status()
-            host.send_message(kwargs['launcher_id'], ["已手动检查直播状态。"])
+            await host.send_message(kwargs['launcher_id'], ["已手动检查直播状态。"])
             event.prevent_default()
             event.prevent_postorder()
         elif msg == "!live_status":
             status_message = self.get_live_status_message()
-            host.send_message(kwargs['launcher_id'], [status_message])
+            await host.send_message(kwargs['launcher_id'], [status_message])
             event.prevent_default()
             event.prevent_postorder()
 
