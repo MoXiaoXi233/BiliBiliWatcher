@@ -83,9 +83,13 @@ class BiliBiliWatcherPlugin(BasePlugin):
         await self.send_message(host, event, status_message)
 
     @handler(PersonNormalMessageReceived)
-    async def handle_person_message(self, event: PersonNormalMessageReceived, ctx: EventContext):
+    async def handle_person_message(self, ctx: EventContext):
+        event = ctx.event
         msg = event.text_message.strip()
-        if msg.startswith("添加B站用户"):
+        if msg == "hello":
+            ctx.reply = [f"hello, {event.sender_id}!"]
+            ctx.prevent_default()
+        elif msg.startswith("添加B站用户"):
             await self.add_bili_uid(event, self.host, msg.split()[1])
         elif msg == "检查直播":
             await self.check_live(event, self.host, {})
@@ -93,9 +97,13 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.live_status(event, self.host, {})
 
     @handler(GroupNormalMessageReceived)
-    async def handle_group_message(self, event: GroupNormalMessageReceived, ctx: EventContext):
+    async def handle_group_message(self, ctx: EventContext):
+        event = ctx.event
         msg = event.text_message.strip()
-        if msg.startswith("添加B站用户"):
+        if msg == "hello":
+            ctx.reply = [f"hello, {event.sender_id}!"]
+            ctx.prevent_default()
+        elif msg.startswith("添加B站用户"):
             await self.add_bili_uid(event, self.host, msg.split()[1])
         elif msg == "检查直播":
             await self.check_live(event, self.host, {})
