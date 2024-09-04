@@ -13,8 +13,13 @@ bili_url = "https://api.bilibili.com/x/space/app/index"
 live_cache = {}
 
 def get_bili_status(uid):
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
+        "Referer": "https://www.bilibili.com/",
+        "Origin": "https://www.bilibili.com"
+    }
     try:
-        response = requests.get(bili_url, params={'mid': uid})
+        response = requests.get(bili_url, params={'mid': uid}, headers=headers)
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
@@ -78,21 +83,21 @@ class BiliBiliWatcherPlugin(BasePlugin):
         await self.send_message(host, event, status_message)
 
     @handler(PersonNormalMessageReceived)
-    async def handle_person_message(self, ctx: EventContext):
-        msg = ctx.event.text_message.strip()
+    async def handle_person_message(self, event: PersonNormalMessageReceived, ctx: EventContext):
+        msg = event.text_message.strip()
         if msg.startswith("!add_bili_uid"):
-            await self.add_bili_uid(ctx.event, self.host, msg.split()[1])
+            await self.add_bili_uid(event, self.host, msg.split()[1])
         elif msg == "!check_live":
-            await self.check_live(ctx.event, self.host, {})
+            await self.check_live(event, self.host, {})
         elif msg == "!live_status":
-            await self.live_status(ctx.event, self.host, {})
+            await self.live_status(event, self.host, {})
 
     @handler(GroupNormalMessageReceived)
-    async def handle_group_message(self, ctx: EventContext):
-        msg = ctx.event.text_message.strip()
+    async def handle_group_message(self, event: GroupNormalMessageReceived, ctx: EventContext):
+        msg = event.text_message.strip()
         if msg.startswith("!add_bili_uid"):
-            await self.add_bili_uid(ctx.event, self.host, msg.split()[1])
+            await self.add_bili_uid(event, self.host, msg.split()[1])
         elif msg == "!check_live":
-            await self.check_live(ctx.event, self.host, {})
+            await self.check_live(event, self.host, {})
         elif msg == "!live_status":
-            await self.live_status(ctx.event, self.host, {})
+            await self.live_status(event, self.host, {})
