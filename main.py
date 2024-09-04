@@ -62,24 +62,14 @@ async def notify_users_and_groups(message):
 
 async def send_message(target_type, target_id, message):
     # 这里实现发送消息的逻辑
-    # 例如，你可以通过某个 API 发送消息
-    # 这里是一个伪代码示例：
-    api_url = f"https://your-chat-api/send_message"
-    payload = {
-        'target_type': target_type,
-        'target_id': target_id,
-        'message': message
-    }
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    response = requests.post(api_url, json=payload, headers=headers)
-    if response.status_code == 200:
-        print(f"消息发送成功: {target_id}")
-    else:
-        print(f"消息发送失败: {target_id}, 错误: {response.text}")
+    # 例如，你可以通过 ctx.send_message 发送消息
+    message_chain = mirai.MessageChain.create([mirai.Plain(message)])
+    if target_type == "person":
+        await ctx.send_message("person", target_id, message_chain)
+    elif target_type == "group":
+        await ctx.send_message("group", target_id, message_chain)
 
-@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.11", author="MoXiify")
+@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
 
     def __init__(self, host: APIHost):
@@ -96,75 +86,75 @@ class BiliBiliWatcherPlugin(BasePlugin):
 
     async def add_bili_uid(self, ctx: EventContext, uid):
         if not uid.isdigit():
-            ctx.add_return("reply", ["UID 必须是数字。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain("UID 必须是数字。")]))
             ctx.prevent_default()
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
-            ctx.add_return("reply", [f"B站用户 {uid} 已添加。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"B站用户 {uid} 已添加。")]))
         else:
-            ctx.add_return("reply", [f"B站用户 {uid} 已存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"B站用户 {uid} 已存在。")]))
         ctx.prevent_default()
 
     async def remove_bili_uid(self, ctx: EventContext, uid):
         if not uid.isdigit():
-            ctx.add_return("reply", ["UID 必须是数字。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain("UID 必须是数字。")]))
             ctx.prevent_default()
             return
         if uid in config['bili_live_idx']:
             config['bili_live_idx'].remove(uid)
-            ctx.add_return("reply", [f"B站用户 {uid} 已删除。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"B站用户 {uid} 已删除。")]))
         else:
-            ctx.add_return("reply", [f"B站用户 {uid} 不存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"B站用户 {uid} 不存在。")]))
         ctx.prevent_default()
 
     async def add_notify_user(self, ctx: EventContext, user_id):
         if user_id not in config['notify_users']:
             config['notify_users'].append(user_id)
-            ctx.add_return("reply", [f"通知用户 {user_id} 已添加。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知用户 {user_id} 已添加。")]))
         else:
-            ctx.add_return("reply", [f"通知用户 {user_id} 已存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知用户 {user_id} 已存在。")]))
         ctx.prevent_default()
 
     async def remove_notify_user(self, ctx: EventContext, user_id):
         if user_id in config['notify_users']:
             config['notify_users'].remove(user_id)
-            ctx.add_return("reply", [f"通知用户 {user_id} 已删除。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知用户 {user_id} 已删除。")]))
         else:
-            ctx.add_return("reply", [f"通知用户 {user_id} 不存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知用户 {user_id} 不存在。")]))
         ctx.prevent_default()
 
     async def add_notify_group(self, ctx: EventContext, group_id):
         if group_id not in config['notify_groups']:
             config['notify_groups'].append(group_id)
-            ctx.add_return("reply", [f"通知群组 {group_id} 已添加。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知群组 {group_id} 已添加。")]))
         else:
-            ctx.add_return("reply", [f"通知群组 {group_id} 已存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知群组 {group_id} 已存在。")]))
         ctx.prevent_default()
 
     async def remove_notify_group(self, ctx: EventContext, group_id):
         if group_id in config['notify_groups']:
             config['notify_groups'].remove(group_id)
-            ctx.add_return("reply", [f"通知群组 {group_id} 已删除。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知群组 {group_id} 已删除。")]))
         else:
-            ctx.add_return("reply", [f"通知群组 {group_id} 不存在。"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"通知群组 {group_id} 不存在。")]))
         ctx.prevent_default()
 
     async def live_status(self, ctx: EventContext):
         await cache()  # 先进行一次检查
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
-            status = '直播中' if live_cache.get(uid, {}).get('status', 'false') == 'true' else '未直播'
+            status = '直播中' if live_cache.get(uid, {}).get('status', 'true') == 'true' else '未直播'
             last_update = live_cache.get(uid, {}).get('last_update', '无记录')
             status_message += f"B站用户 {uid}: {status}（最后更新: {last_update}）\n"
-        ctx.add_return("reply", [status_message])
+        ctx.reply(mirai.MessageChain.create([mirai.Plain(status_message)]))
         ctx.prevent_default()
 
     async def show_notify_list(self, ctx: EventContext):
         user_list = "\n".join(config['notify_users']) if config['notify_users'] else "无"
         group_list = "\n".join(config['notify_groups']) if config['notify_groups'] else "无"
         message = f"当前通知用户:\n{user_list}\n\n当前通知群组:\n{group_list}"
-        ctx.add_return("reply", [message])
+        ctx.reply(mirai.MessageChain.create([mirai.Plain(message)]))
         ctx.prevent_default()
 
     @handler(PersonNormalMessageReceived)
@@ -172,12 +162,12 @@ class BiliBiliWatcherPlugin(BasePlugin):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            ctx.add_return("reply", [f"你好呀, {event.sender_id}!"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain(f"你好呀, {event.sender_id}!")]))
             ctx.prevent_default()
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的B站用户UID。格式：添加UID 23333")]))
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -185,7 +175,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除UID"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的B站用户UID。格式：删除UID 23333")]))
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -193,31 +183,31 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加通知用户"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的通知用户ID。格式：添加通知用户 12345"])
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知用户ID。格式：添加通知用户 12345")]))
                 ctx.prevent_default()
                 return
             user_id = parts[1]
             await self.add_notify_user(ctx, user_id)
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的通知用户ID。格式：删除通知用户 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知用户ID。格式：删除通知用户 12345")]))
                 ctx.prevent_default()
                 return
             user_id = parts[1]
             await self.remove_notify_user(ctx, user_id)
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的通知群组ID。格式：添加通知群组 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知群组ID。格式：添加通知群组 12345")]))
                 ctx.prevent_default()
                 return
             group_id = parts[1]
             await self.add_notify_group(ctx, group_id)
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的通知群组ID。格式：删除通知群组 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知群组ID。格式：删除通知群组 12345")]))
                 ctx.prevent_default()
                 return
             group_id = parts[1]
@@ -232,52 +222,52 @@ class BiliBiliWatcherPlugin(BasePlugin):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            ctx.add_return("reply", ["hello, everyone!"])
+            ctx.reply(mirai.MessageChain.create([mirai.Plain("hello, everyone!")]))
             ctx.prevent_default()
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的B站用户UID。格式：添加UID 23333")]))
                 ctx.prevent_default()
                 return
             uid = parts[1]
             await self.add_bili_uid(ctx, uid)
         elif msg.startswith("删除UID"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的B站用户UID。格式：删除UID 23333")]))
                 ctx.prevent_default()
                 return
             uid = parts[1]
             await self.remove_bili_uid(ctx, uid)
         elif msg.startswith("添加通知用户"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的通知用户ID。格式：添加通知用户 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知用户ID。格式：添加通知用户 12345")]))
                 ctx.prevent_default()
                 return
             user_id = parts[1]
             await self.add_notify_user(ctx, user_id)
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的通知用户ID。格式：删除通知用户 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知用户ID。格式：删除通知用户 12345")]))
                 ctx.prevent_default()
                 return
             user_id = parts[1]
             await self.remove_notify_user(ctx, user_id)
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的通知群组ID。格式：添加通知群组 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要添加的通知群组ID。格式：添加通知群组 12345")]))
                 ctx.prevent_default()
                 return
             group_id = parts[1]
             await self.add_notify_group(ctx, group_id)
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
-            if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要删除的通知群组ID。格式：删除通知群组 12345"])
+            if len(parts) < 2):
+                ctx.reply(mirai.MessageChain.create([mirai.Plain("请提供要删除的通知群组ID。格式：删除通知群组 12345")]))
                 ctx.prevent_default()
                 return
             group_id = parts[1]
