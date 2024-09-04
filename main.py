@@ -3,7 +3,6 @@ import asyncio
 from datetime import datetime
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
-import logging
 
 # 默认配置
 config = {
@@ -14,10 +13,6 @@ config = {
 
 bili_url = "https://api.bilibili.com/x/space/app/index"
 live_cache = {}
-
-# 设置日志
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
 
 def get_bili_status(uid):
     headers = {
@@ -30,7 +25,7 @@ def get_bili_status(uid):
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        logger.error(f"请求错误: {e}")
+        print(f"请求错误: {e}")
         return None
 
 async def cache():
@@ -46,32 +41,32 @@ async def cache():
             live_cache[uid] = {'status': 'false', 'last_update': current_time}
             message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
             await notify_users_and_groups(message)
-            logger.info(message)
+            print(message)  # 添加日志记录
         elif live_cache[uid]['status'] == 'false' and status == 1:
             live_cache[uid] = {'status': 'true', 'last_update': current_time}
             title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
             message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
             await notify_users_and_groups(f"通知: {title}\n{message}")
-            logger.info(f"通知: {title}\n{message}")
+            print(f"通知: {title}\n{message}")  # 添加日志记录
         else:
-            logger.info(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")
+            print(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")  # 添加日志记录
 
 async def notify_users_and_groups(message):
     for user_id in config['notify_users']:
-        logger.info(f"通知用户 {user_id}: {message}")
-        await send_message("person", user_id, message)
+        print(f"通知用户 {user_id}: {message}")
+        await send_message("person", user_id, message)  # 实际通知用户的代码
 
     for group_id in config['notify_groups']:
-        logger.info(f"通知群组 {group_id}: {message}")
-        await send_message("group", group_id, message)
+        print(f"通知群组 {group_id}: {message}")
+        await send_message("group", group_id, message)  # 实际通知群组的代码
 
 async def send_message(target_type, target_id, message):
-    # 使用 ctx.send_message 发送消息
-    try:
-        await ctx.send_message(target_type, target_id, message)
-        logger.info(f"消息发送成功: {target_id}")
-    except Exception as e:
-        logger.error(f"消息发送失败: {target_id}, 错误: {e}")
+    # 构建 MessageChain 对象
+    message_chain = MessageChain.create([message])
+    
+    # 发送消息
+    await ctx.send_message(target_type, target_id, message_chain)
+    print(f"消息发送成功: {target_id}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
@@ -90,58 +85,58 @@ class BiliBiliWatcherPlugin(BasePlugin):
 
     async def add_bili_uid(self, ctx: EventContext, uid):
         if not uid.isdigit():
-            await ctx.reply("UID 必须是数字。")
+            ctx.add_return("reply", ["UID 必须是数字。"])
             ctx.prevent_default()
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
-            await ctx.reply(f"B站用户 {uid} 已添加。")
+            ctx.add_return("reply", [f"B站用户 {uid} 已添加。"])
         else:
-            await ctx.reply(f"B站用户 {uid} 已存在。")
+            ctx.add_return("reply", [f"B站用户 {uid} 已存在。"])
         ctx.prevent_default()
 
     async def remove_bili_uid(self, ctx: EventContext, uid):
         if not uid.isdigit():
-            await ctx.reply("UID 必须是数字。")
+            ctx.add_return("reply", ["UID 必须是数字。"])
             ctx.prevent_default()
             return
         if uid in config['bili_live_idx']:
             config['bili_live_idx'].remove(uid)
-            await ctx.reply(f"B站用户 {uid} 已删除。")
+            ctx.add_return("reply", [f"B站用户 {uid} 已删除。"])
         else:
-            await ctx.reply(f"B站用户 {uid} 不存在。")
+            ctx.add_return("reply", [f"B站用户 {uid} 不存在。"])
         ctx.prevent_default()
 
     async def add_notify_user(self, ctx: EventContext, user_id):
         if user_id not in config['notify_users']:
             config['notify_users'].append(user_id)
-            await ctx.reply(f"通知用户 {user_id} 已添加。")
+            ctx.add_return("reply", [f"通知用户 {user_id} 已添加。"])
         else:
-            await ctx.reply(f"通知用户 {user_id} 已存在。")
+            ctx.add_return("reply", [f"通知用户 {user_id} 已存在。"])
         ctx.prevent_default()
 
     async def remove_notify_user(self, ctx: EventContext, user_id):
         if user_id in config['notify_users']:
             config['notify_users'].remove(user_id)
-            await ctx.reply(f"通知用户 {user_id} 已删除。")
+            ctx.add_return("reply", [f"通知用户 {user_id} 已删除。"])
         else:
-            await ctx.reply(f"通知用户 {user_id} 不存在。")
+            ctx.add_return("reply", [f"通知用户 {user_id} 不存在。"])
         ctx.prevent_default()
 
     async def add_notify_group(self, ctx: EventContext, group_id):
         if group_id not in config['notify_groups']:
             config['notify_groups'].append(group_id)
-            await ctx.reply(f"通知群组 {group_id} 已添加。")
+            ctx.add_return("reply", [f"通知群组 {group_id} 已添加。"])
         else:
-            await ctx.reply(f"通知群组 {group_id} 已存在。")
+            ctx.add_return("reply", [f"通知群组 {group_id} 已存在。"])
         ctx.prevent_default()
 
     async def remove_notify_group(self, ctx: EventContext, group_id):
         if group_id in config['notify_groups']:
             config['notify_groups'].remove(group_id)
-            await ctx.reply(f"通知群组 {group_id} 已删除。")
+            ctx.add_return("reply", [f"通知群组 {group_id} 已删除。"])
         else:
-            await ctx.reply(f"通知群组 {group_id} 不存在。")
+            ctx.add_return("reply", [f"通知群组 {group_id} 不存在。"])
         ctx.prevent_default()
 
     async def live_status(self, ctx: EventContext):
@@ -151,14 +146,14 @@ class BiliBiliWatcherPlugin(BasePlugin):
             status = '直播中' if live_cache.get(uid, {}).get('status', 'false') == 'true' else '未直播'
             last_update = live_cache.get(uid, {}).get('last_update', '无记录')
             status_message += f"B站用户 {uid}: {status}（最后更新: {last_update}）\n"
-        await ctx.reply(status_message)
+        ctx.add_return("reply", [status_message])
         ctx.prevent_default()
 
     async def show_notify_list(self, ctx: EventContext):
         user_list = "\n".join(config['notify_users']) if config['notify_users'] else "无"
         group_list = "\n".join(config['notify_groups']) if config['notify_groups'] else "无"
         message = f"当前通知用户:\n{user_list}\n\n当前通知群组:\n{group_list}"
-        await ctx.reply(message)
+        ctx.add_return("reply", [message])
         ctx.prevent_default()
 
     @handler(PersonNormalMessageReceived)
@@ -166,12 +161,12 @@ class BiliBiliWatcherPlugin(BasePlugin):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            await ctx.reply(f"你好呀, {event.sender_id}!")
+            ctx.add_return("reply", [f"你好呀, {event.sender_id}!"])
             ctx.prevent_default()
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的B站用户UID。格式：添加UID 23333")
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -179,7 +174,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除UID"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的B站用户UID。格式：删除UID 23333")
+                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -187,7 +182,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加通知用户"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的通知用户ID。格式：添加通知用户 12345")
+                ctx.add_return("reply", ["请提供要添加的通知用户ID。格式：添加通知用户 12345"])
                 ctx.prevent_default()
                 return
             user_id = parts[1]
@@ -195,7 +190,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的通知用户ID。格式：删除通知用户 12345")
+                ctx.add_return("reply", ["请提供要删除的通知用户ID。格式：删除通知用户 12345"])
                 ctx.prevent_default()
                 return
             user_id = parts[1]
@@ -203,7 +198,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的通知群组ID。格式：添加通知群组 12345")
+                ctx.add_return("reply", ["请提供要添加的通知群组ID。格式：添加通知群组 12345"])
                 ctx.prevent_default()
                 return
             group_id = parts[1]
@@ -211,7 +206,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的通知群组ID。格式：删除通知群组 12345")
+                ctx.add_return("reply", ["请提供要删除的通知群组ID。格式：删除通知群组 12345"])
                 ctx.prevent_default()
                 return
             group_id = parts[1]
@@ -219,19 +214,19 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)
+            await self.show_notify_list(ctx)  # 添加的命令处理
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, ctx: EventContext):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            await ctx.reply("hello, everyone!")
+            ctx.add_return("reply", ["hello, everyone!"])
             ctx.prevent_default()
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的B站用户UID。格式：添加UID 23333")
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -239,7 +234,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除UID"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的B站用户UID。格式：删除UID 23333")
+                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
@@ -247,7 +242,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加通知用户"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的通知用户ID。格式：添加通知用户 12345")
+                ctx.add_return("reply", ["请提供要添加的通知用户ID。格式：添加通知用户 12345"])
                 ctx.prevent_default()
                 return
             user_id = parts[1]
@@ -255,7 +250,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除通知用户"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的通知用户ID。格式：删除通知用户 12345")
+                ctx.add_return("reply", ["请提供要删除的通知用户ID。格式：删除通知用户 12345"])
                 ctx.prevent_default()
                 return
             user_id = parts[1]
@@ -263,7 +258,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加通知群组"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要添加的通知群组ID。格式：添加通知群组 12345")
+                ctx.add_return("reply", ["请提供要添加的通知群组ID。格式：添加通知群组 12345"])
                 ctx.prevent_default()
                 return
             group_id = parts[1]
@@ -271,7 +266,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("删除通知群组"):
             parts = msg.split()
             if len(parts) < 2:
-                await ctx.reply("请提供要删除的通知群组ID。格式：删除通知群组 12345")
+                ctx.add_return("reply", ["请提供要删除的通知群组ID。格式：删除通知群组 12345"])
                 ctx.prevent_default()
                 return
             group_id = parts[1]
@@ -279,4 +274,4 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)
+            await self.show_notify_list(ctx)  # 添加的命令处理
