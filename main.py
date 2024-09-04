@@ -1,12 +1,9 @@
 import requests
 import asyncio
-import random
 import logging
 import traceback
 from pkg.plugin.models import Plugin, register, on, PersonMessageReceived, GroupMessageReceived
 from pkg.plugin.host import PluginHost
-from pkg.command.models import Command, CommandGroup, CommandSession, on_command
-from pkg.models.message import Image
 
 # 默认配置
 config = {
