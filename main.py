@@ -3,9 +3,13 @@ import asyncio
 from datetime import datetime
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
+import logging
+
+# 配置文件路径
+CONFIG_PATH = 'config.json'
 
 # 默认配置
-config = {
+default_config = {
     'bili_live_idx': ['479308514'],
     'notify_users': [],
     'notify_groups': []
@@ -13,6 +17,23 @@ config = {
 
 bili_url = "https://api.bilibili.com/x/space/app/index"
 live_cache = {}
+
+# 设置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+def load_config():
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return default_config
+
+def save_config(config):
+    with open(CONFIG_PATH, 'w') as f:
+        json.dump(config, f, indent=4)
+
+config = load_config()
 
 def get_bili_status(uid):
     headers = {
@@ -25,7 +46,7 @@ def get_bili_status(uid):
         response.raise_for_status()
         return response.json()
     except requests.RequestException as e:
-        print(f"请求错误: {e}")
+        logger.error(f"请求错误: {e}")
         return None
 
 async def cache():
@@ -41,43 +62,32 @@ async def cache():
             live_cache[uid] = {'status': 'false', 'last_update': current_time}
             message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
             await notify_users_and_groups(message)
-            print(message)  # 添加日志记录
+            logger.info(message)
         elif live_cache[uid]['status'] == 'false' and status == 1:
             live_cache[uid] = {'status': 'true', 'last_update': current_time}
             title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
             message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
             await notify_users_and_groups(f"通知: {title}\n{message}")
-            print(f"通知: {title}\n{message}")  # 添加日志记录
+            logger.info(f"通知: {title}\n{message}")
         else:
-            print(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")  # 添加日志记录
+            logger.info(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")
 
 async def notify_users_and_groups(message):
     for user_id in config['notify_users']:
-        print(f"通知用户 {user_id}: {message}")
-        await send_message("person", user_id, message)  # 实际通知用户的代码
+        logger.info(f"通知用户 {user_id}: {message}")
+        await send_message("person", user_id, message)
 
     for group_id in config['notify_groups']:
-        print(f"通知群组 {group_id}: {message}")
-        await send_message("group", group_id, message)  # 实际通知群组的代码
+        logger.info(f"通知群组 {group_id}: {message}")
+        await send_message("group", group_id, message)
 
 async def send_message(target_type, target_id, message):
-    # 这里实现发送消息的逻辑
-    # 例如，你可以通过某个 API 发送消息
-    # 这里是一个伪代码示例：
-    api_url = f"https://your-chat-api/send_message"
-    payload = {
-        'target_type': target_type,
-        'target_id': target_id,
-        'message': message
-    }
-    headers = {
-        'Content-Type': 'application/json'
-    }
-    response = requests.post(api_url, json=payload, headers=headers)
-    if response.status_code == 200:
-        print(f"消息发送成功: {target_id}")
-    else:
-        print(f"消息发送失败: {target_id}, 错误: {response.text}")
+    # 使用 ctx.send_message 发送消息
+    try:
+        await ctx.send_message(target_type, target_id, message)
+        logger.info(f"消息发送成功: {target_id}")
+    except Exception as e:
+        logger.error(f"消息发送失败: {target_id}, 错误: {e}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
@@ -101,6 +111,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
+            save_config(config)
             ctx.add_return("reply", [f"B站用户 {uid} 已添加。"])
         else:
             ctx.add_return("reply", [f"B站用户 {uid} 已存在。"])
@@ -113,6 +124,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
             return
         if uid in config['bili_live_idx']:
             config['bili_live_idx'].remove(uid)
+            save_config(config)
             ctx.add_return("reply", [f"B站用户 {uid} 已删除。"])
         else:
             ctx.add_return("reply", [f"B站用户 {uid} 不存在。"])
@@ -121,6 +133,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def add_notify_user(self, ctx: EventContext, user_id):
         if user_id not in config['notify_users']:
             config['notify_users'].append(user_id)
+            save_config(config)
             ctx.add_return("reply", [f"通知用户 {user_id} 已添加。"])
         else:
             ctx.add_return("reply", [f"通知用户 {user_id} 已存在。"])
@@ -129,6 +142,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def remove_notify_user(self, ctx: EventContext, user_id):
         if user_id in config['notify_users']:
             config['notify_users'].remove(user_id)
+            save_config(config)
             ctx.add_return("reply", [f"通知用户 {user_id} 已删除。"])
         else:
             ctx.add_return("reply", [f"通知用户 {user_id} 不存在。"])
@@ -137,6 +151,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def add_notify_group(self, ctx: EventContext, group_id):
         if group_id not in config['notify_groups']:
             config['notify_groups'].append(group_id)
+            save_config(config)
             ctx.add_return("reply", [f"通知群组 {group_id} 已添加。"])
         else:
             ctx.add_return("reply", [f"通知群组 {group_id} 已存在。"])
@@ -145,6 +160,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
     async def remove_notify_group(self, ctx: EventContext, group_id):
         if group_id in config['notify_groups']:
             config['notify_groups'].remove(group_id)
+            save_config(config)
             ctx.add_return("reply", [f"通知群组 {group_id} 已删除。"])
         else:
             ctx.add_return("reply", [f"通知群组 {group_id} 不存在。"])
@@ -225,7 +241,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)  # 添加的命令处理
+            await self.show_notify_list(ctx)
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, ctx: EventContext):
@@ -285,4 +301,4 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)  # 添加的命令处理
+            await self.show_notify_list(ctx)
