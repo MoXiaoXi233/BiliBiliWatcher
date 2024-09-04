@@ -41,11 +41,15 @@ async def cache():
             live_cache[uid] = {'status': 'false', 'last_update': current_time}
             message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
             await notify_users_and_groups(message)
+            print(message)  # 添加日志记录
         elif live_cache[uid]['status'] == 'false' and status == 1:
             live_cache[uid] = {'status': 'true', 'last_update': current_time}
             title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
             message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
             await notify_users_and_groups(f"通知: {title}\n{message}")
+            print(f"通知: {title}\n{message}")  # 添加日志记录
+        else:
+            print(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")  # 添加日志记录
 
 async def notify_users_and_groups(message):
     for user_id in config['notify_users']:
@@ -155,6 +159,13 @@ class BiliBiliWatcherPlugin(BasePlugin):
         ctx.add_return("reply", [status_message])
         ctx.prevent_default()
 
+    async def show_notify_list(self, ctx: EventContext):
+        user_list = "\n".join(config['notify_users']) if config['notify_users'] else "无"
+        group_list = "\n".join(config['notify_groups']) if config['notify_groups'] else "无"
+        message = f"当前通知用户:\n{user_list}\n\n当前通知群组:\n{group_list}"
+        ctx.add_return("reply", [message])
+        ctx.prevent_default()
+
     @handler(PersonNormalMessageReceived)
     async def handle_person_message(self, ctx: EventContext):
         event = ctx.event
@@ -212,6 +223,8 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.remove_notify_group(ctx, group_id)
         elif msg == "直播状态":
             await self.live_status(ctx)
+        elif msg == "查看通知列表":
+            await self.show_notify_list(ctx)  # 添加的命令处理
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, ctx: EventContext):
@@ -270,3 +283,5 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await self.remove_notify_group(ctx, group_id)
         elif msg == "直播状态":
             await self.live_status(ctx)
+        elif msg == "查看通知列表":
+            await self.show_notify_list(ctx)  # 添加的命令处理
