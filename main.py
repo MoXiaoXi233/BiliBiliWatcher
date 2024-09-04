@@ -1,5 +1,6 @@
 import requests
 import json
+import asyncio
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
 
@@ -31,18 +32,20 @@ def cache():
                 message = f"直播标题:{resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}"
                 print(f"通知: {title}\n{message}")
 
-@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="MoXiify")
+@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
 
     def __init__(self, host: APIHost):
         self.host = host
 
     async def initialize(self):
-        # 注册一个定时器，每分钟执行一次
-        self.host.scheduler.add_job(self.check_live_status, 'interval', minutes=1)
+        # 启动一个异步任务定期检查直播状态
+        self.host.loop.create_task(self.periodic_check())
 
-    async def check_live_status(self):
-        cache()
+    async def periodic_check(self):
+        while True:
+            cache()
+            await asyncio.sleep(60)  # 每分钟检查一次
 
     @handler(PersonNormalMessageReceived)
     async def person_normal_message_received(self, ctx: EventContext):
@@ -90,5 +93,5 @@ class BiliBiliWatcherPlugin(BasePlugin):
             status_message += f"B站用户 {uid}: {'直播中' if live_cache.get(uid, 'false') == 'true' else '未直播'}\n"
         return status_message
 
-    def __del__(self):
-        pass
+    async def check_live_status(self):
+        cache()
