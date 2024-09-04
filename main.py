@@ -69,7 +69,7 @@ async def notify_users_and_groups(message):
 
 async def send_message(target_type, target_id, message):
     # 这里实现发送消息的逻辑
-    message_chain = mirai.MessageChain.create([mirai.Plain(message)])
+    message_chain = [mirai.Plain(message)]
     if target_type == "person":
         await ctx.send_message("person", target_id, message_chain)
     elif target_type == "group":
@@ -163,6 +163,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         ctx.add_return("reply", [message])
         ctx.prevent_default()
 
+    # 当收到个人消息时触发
     @handler(PersonNormalMessageReceived)
     async def person_normal_message_received(self, ctx: EventContext):
         msg = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
@@ -226,6 +227,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "查看通知列表":
             await self.show_notify_list(ctx)
 
+    # 当收到群消息时触发
     @handler(GroupNormalMessageReceived)
     async def group_normal_message_received(self, ctx: EventContext):
         msg = ctx.event.text_message  # 这里的 event 即为 GroupNormalMessageReceived 的对象
