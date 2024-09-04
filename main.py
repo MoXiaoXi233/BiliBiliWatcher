@@ -40,7 +40,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
 
     async def initialize(self):
         # 启动一个异步任务定期检查直播状态
-        self.host.loop.create_task(self.periodic_check())
+        asyncio.create_task(self.periodic_check())
 
     async def periodic_check(self):
         while True:
