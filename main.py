@@ -61,12 +61,23 @@ async def notify_users_and_groups(message):
         await send_message("group", group_id, message)  # 实际通知群组的代码
 
 async def send_message(target_type, target_id, message):
-    # 构建 MessageChain 对象
-    message_chain = MessageChain.create([message])
-    
-    # 发送消息
-    await ctx.send_message(target_type, target_id, message_chain)
-    print(f"消息发送成功: {target_id}")
+    # 这里实现发送消息的逻辑
+    # 例如，你可以通过某个 API 发送消息
+    # 这里是一个伪代码示例：
+    api_url = f"https://your-chat-api/send_message"
+    payload = {
+        'target_type': target_type,
+        'target_id': target_id,
+        'message': message
+    }
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    response = requests.post(api_url, json=payload, headers=headers)
+    if response.status_code == 200:
+        print(f"消息发送成功: {target_id}")
+    else:
+        print(f"消息发送失败: {target_id}, 错误: {response.text}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
 class BiliBiliWatcherPlugin(BasePlugin):
