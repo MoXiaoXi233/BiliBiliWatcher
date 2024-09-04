@@ -85,19 +85,19 @@ class BiliBiliWatcherPlugin(BasePlugin):
     @handler(PersonNormalMessageReceived)
     async def handle_person_message(self, event: PersonNormalMessageReceived, ctx: EventContext):
         msg = event.text_message.strip()
-        if msg.startswith("add_bili_uid"):
+        if msg.startswith("添加B站用户"):
             await self.add_bili_uid(event, self.host, msg.split()[1])
-        elif msg == "check_live":
+        elif msg == "检查直播":
             await self.check_live(event, self.host, {})
-        elif msg == "live_status":
+        elif msg == "直播状态":
             await self.live_status(event, self.host, {})
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, event: GroupNormalMessageReceived, ctx: EventContext):
         msg = event.text_message.strip()
-        if msg.startswith("add_bili_uid"):
+        if msg.startswith("添加B站用户"):
             await self.add_bili_uid(event, self.host, msg.split()[1])
-        elif msg == "check_live":
+        elif msg == "检查直播":
             await self.check_live(event, self.host, {})
-        elif msg == "live_status":
+        elif msg == "直播状态":
             await self.live_status(event, self.host, {})
