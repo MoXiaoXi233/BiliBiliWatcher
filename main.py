@@ -90,8 +90,14 @@ class BiliBiliWatcherPlugin(BasePlugin):
         if msg == "hello":
             ctx.add_return("reply", [f"hello, {event.sender_id}!"])
             ctx.prevent_default()
-        elif msg.startswith("添加B站用户"):
-            await self.add_bili_uid(ctx, msg.split()[1])
+        elif msg.startswith("添加UID"):
+            parts = msg.split()
+            if len(parts) < 2:
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。"])
+                ctx.prevent_default()
+                return
+            uid = parts[1]
+            await self.add_bili_uid(ctx, uid)
         elif msg == "检查直播":
             await self.check_live(ctx)
         elif msg == "直播状态":
@@ -104,8 +110,14 @@ class BiliBiliWatcherPlugin(BasePlugin):
         if msg == "hello":
             ctx.add_return("reply", ["hello, everyone!"])
             ctx.prevent_default()
-        elif msg.startswith("添加B站用户"):
-            await self.add_bili_uid(ctx, msg.split()[1])
+        elif msg.startswith("添加UID"):
+            parts = msg.split()
+            if len(parts) < 2:
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。"])
+                ctx.prevent_default()
+                return
+            uid = parts[1]
+            await self.add_bili_uid(ctx, uid)
         elif msg == "检查直播":
             await self.check_live(ctx)
         elif msg == "直播状态":
