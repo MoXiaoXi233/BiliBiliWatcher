@@ -52,28 +52,6 @@ class BiliBiliWatcherPlugin(BasePlugin):
             await cache()
             await asyncio.sleep(60)  # 每分钟检查一次
 
-    @handler(PersonNormalMessageReceived)
-    async def person_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message  # 这里的 event 即为 PersonNormalMessageReceived 的对象
-        if msg == "hello":  # 如果消息为hello
-            # 输出调试信息
-            self.host.logger.debug("hello, {}".format(ctx.event.sender_id))
-            # 回复消息 "hello, <发送者id>!"
-            ctx.add_return("reply", ["hello, {}!".format(ctx.event.sender_id)])
-            # 阻止该事件默认行为（向接口获取回复）
-            ctx.prevent_default()
-
-    @handler(GroupNormalMessageReceived)
-    async def group_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message  # 这里的 event 即为 GroupNormalMessageReceived 的对象
-        if msg == "hello":  # 如果消息为hello
-            # 输出调试信息
-            self.host.logger.debug("hello, {}".format(ctx.event.sender_id))
-            # 回复消息 "hello, everyone!"
-            ctx.add_return("reply", ["hello, everyone!"])
-            # 阻止该事件默认行为（向接口获取回复）
-            ctx.prevent_default()
-
     async def send_message(self, host: APIHost, event, message):
         if event.context_type == "group":
             await host.send_group_message(event.context_id, message)
