@@ -1,7 +1,6 @@
 import requests
 import asyncio
 import logging
-import traceback
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
 
