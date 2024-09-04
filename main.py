@@ -71,12 +71,20 @@ class BiliBiliWatcherPlugin(BasePlugin):
             ctx.add_return("reply", [f"B站用户 {uid} 已存在。"])
         ctx.prevent_default()
 
-    async def check_live(self, ctx: EventContext):
-        await cache()
-        ctx.add_return("reply", ["已手动检查直播状态。"])
+    async def remove_bili_uid(self, ctx: EventContext, uid):
+        if not uid.isdigit():
+            ctx.add_return("reply", ["UID 必须是数字。"])
+            ctx.prevent_default()
+            return
+        if uid in config['bili_live_idx']:
+            config['bili_live_idx'].remove(uid)
+            ctx.add_return("reply", [f"B站用户 {uid} 已删除。"])
+        else:
+            ctx.add_return("reply", [f"B站用户 {uid} 不存在。"])
         ctx.prevent_default()
 
     async def live_status(self, ctx: EventContext):
+        await cache()  # 先进行一次检查
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
             status_message += f"B站用户 {uid}: {'直播中' if live_cache.get(uid, 'false') == 'true' else '未直播'}\n"
@@ -88,18 +96,24 @@ class BiliBiliWatcherPlugin(BasePlugin):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            ctx.add_return("reply", [f"hello, {event.sender_id}!"])
+            ctx.add_return("reply", [f"你好呀, {event.sender_id}!"])
             ctx.prevent_default()
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的B站用户UID。"])
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
             await self.add_bili_uid(ctx, uid)
-        elif msg == "检查直播":
-            await self.check_live(ctx)
+        elif msg.startswith("删除UID"):
+            parts = msg.split()
+            if len(parts) < 2:
+                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
+                ctx.prevent_default()
+                return
+            uid = parts[1]
+            await self.remove_bili_uid(ctx, uid)
         elif msg == "直播状态":
             await self.live_status(ctx)
 
@@ -113,12 +127,18 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg.startswith("添加UID"):
             parts = msg.split()
             if len(parts) < 2:
-                ctx.add_return("reply", ["请提供要添加的B站用户UID。"])
+                ctx.add_return("reply", ["请提供要添加的B站用户UID。格式：添加UID 23333"])
                 ctx.prevent_default()
                 return
             uid = parts[1]
             await self.add_bili_uid(ctx, uid)
-        elif msg == "检查直播":
-            await self.check_live(ctx)
+        elif msg.startswith("删除UID"):
+            parts = msg.split()
+            if len(parts) < 2:
+                ctx.add_return("reply", ["请提供要删除的B站用户UID。格式：删除UID 23333"])
+                ctx.prevent_default()
+                return
+            uid = parts[1]
+            await self.remove_bili_uid(ctx, uid)
         elif msg == "直播状态":
             await self.live_status(ctx)
