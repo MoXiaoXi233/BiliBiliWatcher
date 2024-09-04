@@ -51,61 +51,62 @@ class BiliBiliWatcherPlugin(BasePlugin):
         self.host = host
         asyncio.create_task(self.periodic_check())
 
+    async def initialize(self):
+        pass
+
     async def periodic_check(self):
         while True:
             await cache()
             await asyncio.sleep(60)  # 每分钟检查一次
 
-    async def send_message(self, host: APIHost, event, message):
-        if isinstance(event, PersonNormalMessageReceived):
-            await host.send_person_message(event.sender_id, message)
-        elif isinstance(event, GroupNormalMessageReceived):
-            await host.send_group_message(event.group_id, message)
-
-    async def add_bili_uid(self, event, host: APIHost, uid):
+    async def add_bili_uid(self, ctx: EventContext, uid):
         if not uid.isdigit():
-            await self.send_message(host, event, "UID 必须是数字。")
+            ctx.add_return("reply", ["UID 必须是数字。"])
+            ctx.prevent_default()
             return
         if uid not in config['bili_live_idx']:
             config['bili_live_idx'].append(uid)
-            await self.send_message(host, event, f"B站用户 {uid} 已添加。")
+            ctx.add_return("reply", [f"B站用户 {uid} 已添加。"])
         else:
-            await self.send_message(host, event, f"B站用户 {uid} 已存在。")
+            ctx.add_return("reply", [f"B站用户 {uid} 已存在。"])
+        ctx.prevent_default()
 
-    async def check_live(self, event, host: APIHost, kwargs):
+    async def check_live(self, ctx: EventContext):
         await cache()
-        await self.send_message(host, event, "已手动检查直播状态。")
+        ctx.add_return("reply", ["已手动检查直播状态。"])
+        ctx.prevent_default()
 
-    async def live_status(self, event, host: APIHost, kwargs):
+    async def live_status(self, ctx: EventContext):
         status_message = "当前直播状态缓存：\n"
         for uid in config['bili_live_idx']:
             status_message += f"B站用户 {uid}: {'直播中' if live_cache.get(uid, 'false') == 'true' else '未直播'}\n"
-        await self.send_message(host, event, status_message)
+        ctx.add_return("reply", [status_message])
+        ctx.prevent_default()
 
     @handler(PersonNormalMessageReceived)
     async def handle_person_message(self, ctx: EventContext):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            ctx.reply = [f"hello, {event.sender_id}!"]
+            ctx.add_return("reply", [f"hello, {event.sender_id}!"])
             ctx.prevent_default()
         elif msg.startswith("添加B站用户"):
-            await self.add_bili_uid(event, self.host, msg.split()[1])
+            await self.add_bili_uid(ctx, msg.split()[1])
         elif msg == "检查直播":
-            await self.check_live(event, self.host, {})
+            await self.check_live(ctx)
         elif msg == "直播状态":
-            await self.live_status(event, self.host, {})
+            await self.live_status(ctx)
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, ctx: EventContext):
         event = ctx.event
         msg = event.text_message.strip()
         if msg == "hello":
-            ctx.reply = [f"hello, {event.sender_id}!"]
+            ctx.add_return("reply", ["hello, everyone!"])
             ctx.prevent_default()
         elif msg.startswith("添加B站用户"):
-            await self.add_bili_uid(event, self.host, msg.split()[1])
+            await self.add_bili_uid(ctx, msg.split()[1])
         elif msg == "检查直播":
-            await self.check_live(event, self.host, {})
+            await self.check_live(ctx)
         elif msg == "直播状态":
-            await self.live_status(event, self.host, {})
+            await self.live_status(ctx)
