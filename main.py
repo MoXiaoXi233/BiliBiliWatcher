@@ -1,8 +1,8 @@
 import requests
 import json
 import asyncio
-from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
-from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
+from pkg.plugin.models import *
+from pkg.plugin.host import EventContext, PluginHost
 
 # 默认配置
 config = {
@@ -33,13 +33,10 @@ def cache():
                 print(f"通知: {title}\n{message}")
 
 @register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
-class BiliBiliWatcherPlugin(BasePlugin):
+class BiliBiliWatcherPlugin(Plugin):
 
-    def __init__(self, host: APIHost):
-        self.host = host
-
-    async def initialize(self):
-        # 启动一个异步任务定期检查直播状态
+    def __init__(self, plugin_host: PluginHost):
+        self.host = plugin_host
         asyncio.create_task(self.periodic_check())
 
     async def periodic_check(self):
@@ -47,33 +44,32 @@ class BiliBiliWatcherPlugin(BasePlugin):
             cache()
             await asyncio.sleep(60)  # 每分钟检查一次
 
-    @handler(PersonNormalMessageReceived)
-    async def person_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message.strip()
-        await self.handle_message(ctx, msg)
+    @on(PersonMessageReceived)
+    @on(GroupMessageReceived)
+    async def message_received(self, event: EventContext, host: PluginHost, **kwargs):
+        msg = str(kwargs['message_chain']).strip()
+        await self.handle_message(event, host, msg, kwargs)
 
-    @handler(GroupNormalMessageReceived)
-    async def group_normal_message_received(self, ctx: EventContext):
-        msg = ctx.event.text_message.strip()
-        await self.handle_message(ctx, msg)
-
-    async def handle_message(self, ctx: EventContext, msg: str):
+    async def handle_message(self, event: EventContext, host: PluginHost, msg: str, kwargs):
         if msg.startswith("!add_bili_uid "):
             new_uid = msg.split(" ", 1)[1]
             if new_uid not in config['bili_live_idx']:
                 config['bili_live_idx'].append(new_uid)
-                ctx.add_return("reply", [f"B站用户 {new_uid} 已添加。"])
+                host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已添加。"])
             else:
-                ctx.add_return("reply", [f"B站用户 {new_uid} 已存在。"])
-            ctx.prevent_default()
+                host.send_message(kwargs['launcher_id'], [f"B站用户 {new_uid} 已存在。"])
+            event.prevent_default()
+            event.prevent_postorder()
         elif msg == "!check_live":
             await self.check_live_status()
-            ctx.add_return("reply", ["已手动检查直播状态。"])
-            ctx.prevent_default()
+            host.send_message(kwargs['launcher_id'], ["已手动检查直播状态。"])
+            event.prevent_default()
+            event.prevent_postorder()
         elif msg == "!live_status":
             status_message = self.get_live_status_message()
-            ctx.add_return("reply", [status_message])
-            ctx.prevent_default()
+            host.send_message(kwargs['launcher_id'], [status_message])
+            event.prevent_default()
+            event.prevent_postorder()
 
     def get_live_status_message(self):
         status_message = "当前直播状态缓存：\n"
