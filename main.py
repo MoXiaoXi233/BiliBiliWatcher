@@ -1,5 +1,6 @@
-import requests
+import aiohttp
 import asyncio
+import logging
 from datetime import datetime
 from pkg.plugin.context import register, handler, BasePlugin, APIHost, EventContext
 from pkg.plugin.events import PersonNormalMessageReceived, GroupNormalMessageReceived
@@ -14,23 +15,28 @@ config = {
 bili_url = "https://api.bilibili.com/x/space/app/index"
 live_cache = {}
 
-def get_bili_status(uid):
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+async def get_bili_status(uid):
     headers = {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36",
         "Referer": "https://www.bilibili.com/",
         "Origin": "https://www.bilibili.com"
     }
     try:
-        response = requests.get(bili_url, params={'mid': uid}, headers=headers)
-        response.raise_for_status()
-        return response.json()
-    except requests.RequestException as e:
-        print(f"请求错误: {e}")
+        async with aiohttp.ClientSession() as session:
+            async with session.get(bili_url, params={'mid': uid}, headers=headers) as response:
+                response.raise_for_status()
+                return await response.json()
+    except aiohttp.ClientError as e:
+        logger.error(f"请求错误: {e}")
         return None
 
 async def cache():
     for uid in config['bili_live_idx']:
-        resp_json = get_bili_status(uid)
+        resp_json = await get_bili_status(uid)
         if resp_json is None:
             continue
         status = resp_json['data']['info']['live']['liveStatus']
@@ -41,28 +47,27 @@ async def cache():
             live_cache[uid] = {'status': 'false', 'last_update': current_time}
             message = f"B站用户 {uid} 直播已结束。结束时间: {current_time}"
             await notify_users_and_groups(message)
-            print(message)  # 添加日志记录
+            logger.info(message)
         elif live_cache[uid]['status'] == 'false' and status == 1:
             live_cache[uid] = {'status': 'true', 'last_update': current_time}
             title = f"您关注的 {resp_json['data']['info']['name']} 开播了!"
             message = f"直播标题: {resp_json['data']['info']['live']['title']}\n{resp_json['data']['info']['live']['url']}\n开播时间: {current_time}"
             await notify_users_and_groups(f"通知: {title}\n{message}")
-            print(f"通知: {title}\n{message}")  # 添加日志记录
+            logger.info(f"通知: {title}\n{message}")
         else:
-            print(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")  # 添加日志记录
+            logger.info(f"用户 {uid} 状态未变。当前状态: {'直播中' if status == 1 else '未直播'}。检查时间: {current_time}")
 
 async def notify_users_and_groups(message):
     for user_id in config['notify_users']:
-        print(f"通知用户 {user_id}: {message}")
-        await send_message("person", user_id, message)  # 实际通知用户的代码
+        logger.info(f"通知用户 {user_id}: {message}")
+        await send_message("person", user_id, message)
 
     for group_id in config['notify_groups']:
-        print(f"通知群组 {group_id}: {message}")
-        await send_message("group", group_id, message)  # 实际通知群组的代码
+        logger.info(f"通知群组 {group_id}: {message}")
+        await send_message("group", group_id, message)
 
 async def send_message(target_type, target_id, message):
     # 这里实现发送消息的逻辑
-    # 例如，你可以通过 ctx.send_message 发送消息
     message_chain = mirai.MessageChain.create([mirai.Plain(message)])
     if target_type == "person":
         await ctx.send_message("person", target_id, message_chain)
@@ -215,7 +220,7 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)  # 添加的命令处理
+            await self.show_notify_list(ctx)
 
     @handler(GroupNormalMessageReceived)
     async def handle_group_message(self, ctx: EventContext):
@@ -275,4 +280,4 @@ class BiliBiliWatcherPlugin(BasePlugin):
         elif msg == "直播状态":
             await self.live_status(ctx)
         elif msg == "查看通知列表":
-            await self.show_notify_list(ctx)  # 添加的命令处理
+            await self.show_notify_list(ctx)
