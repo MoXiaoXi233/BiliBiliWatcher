@@ -79,7 +79,7 @@ async def send_message(target_type, target_id, message):
     else:
         print(f"消息发送失败: {target_id}, 错误: {response.text}")
 
-@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.1", author="YourName")
+@register(name="BiliBiliWatcher", description="BiliBili Live Notifier", version="0.11", author="MoXiify")
 class BiliBiliWatcherPlugin(BasePlugin):
 
     def __init__(self, host: APIHost):
