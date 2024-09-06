@@ -13,11 +13,11 @@ BiliBiliWatcher 是一个用于监控 B 站直播状态的插件。
 或查看详细的[插件安装说明](https://github.com/RockChinQ/QChatGPT/wiki/5-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
 
 ## 功能
-监控指定的 Bilibili 用户的直播状态
-在用户开播或结束直播时通知指定的用户和群组（暂时不可用）
-动态添加或删除监控的 Bilibili 用户 UID
-动态添加或删除通知的用户和群组
-查看当前监控的 Bilibili 用户和通知列表
+监控指定的 Bilibili 用户的直播状态  
+在用户开播或结束直播时通知指定的用户和群组（暂时不可用）  
+动态添加或删除监控的 Bilibili 用户 UID  
+动态添加或删除通知的用户和群组  
+查看当前监控的 Bilibili 用户和通知列表  
 
 ## 使用
 ### 查看当前直播状态
